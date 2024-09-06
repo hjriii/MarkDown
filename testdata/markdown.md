@@ -211,3 +211,9 @@ $$ e^{i\theta} = \cos\theta + i\sin\theta $$
 < &lt; 小なり
 
 > &gt; 大なり
+
+■画像
+
+![Altのテキスト](/path/to/img.jpg)
+
+![Altのテキスト](/path/to/img.png "タイトル")
