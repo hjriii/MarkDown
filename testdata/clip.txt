@@ -12,8 +12,7 @@
 レベル 2 の見出し
 ■ 引用
 
-"このテキストは、HTML の blockquote 要素に囲まれます。 blockquote 要素は reflowable です。テキストを好きなように 改行することができます。改行したとしても、変換後はひとつの blockquote 要素として扱われます。"
-
+"このテキストは、HTML の blockquote 要素に囲まれます。blockquote 要素は reflowable です。テキストを好きなように改行することができます。改行したとしても、変換後はひとつのblockquote 要素として扱われます。"
 ■ リスト
 
 順序無しリストのアイテム
@@ -35,6 +34,7 @@
 
   console.log("Hello world");
 })();
+
 ■ 水平線
 
 ■ リンク
@@ -73,7 +73,7 @@ https://ja.wikipedia.org/wiki/Markdown
 
 ■ 文字色とサイズ
 
-好きな寿司ネタは炙りサーモンです。 好きな寿司ネタは炙りエンガワです。
+好きな寿司ネタは炙りサーモンです。好きな寿司ネタは炙りエンガワです。
 
 ■ インラインコード
 
@@ -81,12 +81,14 @@ https://ja.wikipedia.org/wiki/Markdown
 
 ■ チェックボックス
 
- マグロ
- コハダ
- エンガワ
+マグロ
+コハダ
+エンガワ
 ■ 折りたたみ
 
 詳細を見る
+
+
 寿司
 エンガワ
 炙りサーモン
@@ -102,6 +104,7 @@ sushi=
 ** & \cdots & \cdots & \cdots & \cdots & ** \\
 \end{pmatrix}
 \end{equation}
+
 ■ インライン数式
 
 $ e^{i\theta} = \cos\theta + i\sin\theta $
@@ -172,9 +175,7 @@ _ アンダースコア
 < < 小なり
 
 > 大なり
-
 ■画像
 
-Altのテキスト
 
-Altのテキスト
+

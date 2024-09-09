@@ -105,13 +105,15 @@ export class AppComponent {
       }
       // テーブルとリスト以外はtextContentで内容を引き出す
       else {
-        let tmp = element.textContent?.trim();
-        if (tmp && tmp.length > 0) {
-          // PRE以外はブラウザに見えているものと同等とするため改行を除去
-          if (element.nodeName !== 'PRE') {
-            tmp = tmp.replace(/\n/g, '');
+        let tmp = element.textContent;
+        if (tmp) {
+          // PREとDETAILS以外はブラウザに見えているものと同等とするため改行を除去
+          if (element.nodeName !== 'PRE' && element.nodeName !== 'DETAILS') {
+            tmp = tmp?.replace(/\n/g, '');
           }
-          text = text + tmp + '\n';
+          if (tmp.length > 0) {
+            text = text + tmp + '\n';
+          }
         }
         // Pでマークダウンが独立するので改行を入れる
         if (element.nodeName === 'P') {
