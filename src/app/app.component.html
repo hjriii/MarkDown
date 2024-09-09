@@ -2,6 +2,8 @@
   <input type="file" (change)="onFileChange($event)">
   <hr>
   <button type="button" (click)="onClick()">クリップボードにコピー</button>
-  <div [innerHTML]="safeHtml"></div>
-
+  <div>
+    <div id="insertDiv" [innerHTML]="safeHtml"></div>
+  </div>
+  <div>{{text}}</div>
 </main>
