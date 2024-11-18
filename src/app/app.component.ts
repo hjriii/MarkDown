@@ -3,6 +3,12 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { marked } from 'marked';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
+
+interface span {
+  col: number,
+  row: number
+};
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -79,25 +85,21 @@ export class AppComponent {
     while (element) {
       // テーブルは独自実装で整形する
       if (element.nodeName === 'TABLE') {
+        const tables: string[][] = [];
         element.childNodes.forEach((child) => {
           // ヘッダを改行からタブ区切りに置き換える
           if (child.nodeName === 'THEAD') {
-            let tmp = child.textContent?.trim();
-            if (tmp) {
-              tmp = tmp.replace(/\n/g, '\t');
-              text = text + tmp.trim();
-            }
+            this.setRow(child, tables, 'TH',);
           }
           // ボディを改行からタブ区切りに置き換える
           if (child.nodeName === 'TBODY') {
-            let tmp = child.textContent?.trim()
-            if (tmp) {
-              tmp = tmp.replace(/\n/g, '\t');
-              tmp = tmp.replace(/\t{2,}/g, '\n');
-              text = text + '\n' + tmp.trim() + '\n';
-            }
+            this.setRow(child, tables, 'TD');
           }
         });
+        console.log(tables);
+        for (let rows of tables) {
+          text = text + rows.join('\t') + '\n';
+        }
       }
       // リストについては階層構造を考慮する
       else if ((element.nodeName === 'UL' || element.nodeName === 'OL' || element.nodeName === 'LI') && element.firstChild) {
@@ -126,6 +128,71 @@ export class AppComponent {
     return text;
   }
 
+
+  setRow = (child: ChildNode, tables: string[][], node: string) => {
+    let rowIndex = 0;
+    let maxRowIndex = 0;
+    let spans: span[] = [];
+    child.childNodes.forEach((row) => {
+      if (row.nodeName === 'TR') {
+        const rowStr: string[] = [];
+        let colIndex = 0;
+        let maxColIndex = 0;
+        row.childNodes.forEach((column) => {
+          if (column.nodeName === node) {
+            if (column && column instanceof Element) {
+              spans = this.setSpan(rowStr, spans, colIndex, rowIndex);
+              let colSpan = 0;
+              let rowSpan = 0;
+              const colspanValue = column.getAttribute('colspan');
+              if (colspanValue) {
+                colSpan = parseInt(colspanValue, 10);
+              }
+              const rowspanValue = column.getAttribute('rowspan');
+              if (rowspanValue) {
+                rowSpan = parseInt(rowspanValue, 10);
+              }
+              for (let i = 1; i < colSpan; i++) {
+                spans.push({ col: colIndex + i, row: rowIndex });
+              }
+              for (let j = 1; j < rowSpan; j++) {
+                spans.push({ col: colIndex, row: rowIndex + j });
+              }
+              for (let i = 1; i < colSpan; i++) {
+                for (let j = 1; j < rowSpan; j++) {
+                  spans.push({ col: colIndex + i, row: rowIndex + j });
+                }
+              }
+              let tmp = column.textContent;
+              if (tmp) {
+                rowStr.push(tmp);
+              } else {
+                rowStr.push('');
+              }
+              colIndex++;
+            }
+          }
+        });
+        spans = this.setSpan(rowStr, spans, colIndex, rowIndex);
+        tables.push(rowStr);
+        rowIndex++;
+      }
+    });
+  }
+
+  setSpan = (rowStr: string[], spans: span[], colIndex: number, rowIndex: number) => {
+    const filter = spans.filter(span => span.row === rowIndex);
+    const remove: span[] = [];
+    let start = colIndex;
+    filter.sort((s1, s2) => s1.col - s2.col).forEach(span => {
+      if (span.col === start) {
+        rowStr.push('');
+        start++;
+        remove.push(span);
+      }
+    })
+    return spans.filter(span => !remove.includes(span));
+  }
 
   search = async (target: any) => {
     if (target) {
