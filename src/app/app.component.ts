@@ -8,6 +8,11 @@ interface span {
   col: number,
   row: number
 };
+interface replaceString {
+  newText: string,
+  oldText: string,
+};
+const replaceTagName: string[] = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HR', 'UL', 'OL', 'LI', 'TABLE', 'THEAD', 'TBODY', 'TH', 'TD'];
 
 @Component({
   selector: 'app-root',
@@ -38,8 +43,22 @@ export class AppComponent {
           this.markdown = result;
           // マークダウンからHTMLに変換
           const html = marked(this.markdown).toString();
-          // サニタイズを実施してinnerHTMLで表示
-          this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+          // // サニタイズを実施してinnerHTMLで表示
+          // this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(html);
+
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const element = doc.querySelector('body');
+          this.createReplaceStringArray(element).then((replaceStrings) => {
+            if (element && element instanceof Element) {
+              let text = element.outerHTML;
+              replaceStrings.forEach((res) => {
+                text = text.replace(res.oldText, res.newText);
+              })
+              // サニタイズを実施してinnerHTMLで表示
+              this.safeHtml = this.sanitizer.bypassSecurityTrustHtml(text);
+            }
+          })
         });
       }
     }
@@ -230,4 +249,75 @@ export class AppComponent {
       }
     }
   };
+
+  createReplaceStringArray = async (target: ChildNode | null | undefined): Promise<replaceString[]> => {
+    let element = target?.firstChild;
+    const replaceStrings: replaceString[] = [];
+    while (element) {
+      if (element.nodeName === 'TABLE') {
+        element.childNodes.forEach((child) => {
+          if (child.nodeName === 'THEAD' || child.nodeName === 'TBODY') {
+            const res = this.createReplaceStringRow(child);
+            replaceStrings.push(...res);
+          }
+        });
+      }
+      // リストについては階層構造を考慮する
+      else if (element.nodeName === 'UL' || element.nodeName === 'OL' || element.nodeName === 'LI') {
+        console.log(element.nodeName)
+        const res = await this.createReplaceStringArray(element);
+        replaceStrings.push(...res);
+      }
+      else {
+        const res = this.createReplaceStringCommon(element);
+        replaceStrings.push(...res);
+      }
+      element = element.nextSibling;
+    }
+    return replaceStrings;
+  }
+
+  createReplaceStringRow = (child: ChildNode): replaceString[] => {
+    const replaceStrings: replaceString[] = [];
+    child.childNodes.forEach((row) => {
+      if (row.nodeName === 'TR') {
+        row.childNodes.forEach((column) => {
+          if (column.nodeName === 'TD' || column.nodeName === 'TH') {
+            if (column && column instanceof Element) {
+              const rep2 = this.createReplaceStringCommon(column);
+              replaceStrings.push(...rep2);
+            }
+          }
+        });
+      }
+    });
+    return replaceStrings;
+  }
+
+  createReplaceStringCommon = (element: ChildNode): replaceString[] => {
+    const replaceStrings: replaceString[] = [];
+    if (!replaceTagName.includes(element.nodeName)) {
+      console.log('createReplaceString')
+      const res = this.createReplaceString(element);
+      replaceStrings.push(res);
+      console.log(replaceStrings)
+      return replaceStrings;
+    }
+    element.childNodes.forEach((child) => {
+      const rep2 = this.createReplaceStringCommon(child);
+      replaceStrings.push(...rep2);
+    });
+    return replaceStrings;
+  }
+
+  createReplaceString = (element: ChildNode): replaceString => {
+    if (!replaceTagName.includes(element.nodeName)) {
+      if (element && element instanceof Element) {
+        const text = element.outerHTML.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return { newText: text, oldText: element.outerHTML }
+      }
+    }
+    return { newText: '', oldText: '' }
+  }
 }
+
