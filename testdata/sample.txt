@@ -1,22 +1,19 @@
-const { getUserById } = require('./userService');
- const { mockDeep } = require('jest-mock-extended');
+const { createUserAndLog } = require('./transactionService');
  const { PrismaClient } = require('@prisma/client');
- jest.mock('@prisma/client', () => ({ PrismaClient: jest.fn(), }));
- const prismaMock = mockDeep<PrismaClient>();
- beforeAll(() => { PrismaClient.mockImplementation(() => prismaMock);
+ jest.mock('@prisma/client', () => { const actualPrismaClient = jest.requireActual('@prisma/client');
+ return { ...actualPrismaClient, PrismaClient: jest.fn().mockImplementation(() => ({ $transaction: jest.fn(), $executeRaw: jest.fn(), user: { create: jest.fn(), }, })), };
  });
- describe('getUserById', () => { it('should return user data for a valid id', async () => { const userId = 1;
- const user = { id: userId, name: 'Alice' };
- prismaMock.user.findUnique.mockResolvedValue(user);
- const result = await getUserById(userId);
- expect(result).toEqual(user);
- expect(prismaMock.user.findUnique).toHaveBeenCalledWith({ where: { id: userId } });
+ describe('createUserAndLog', () => { let prismaMock;
+ beforeAll(() => { prismaMock = new PrismaClient();
  });
- it('should return null if user is not found', async () => { const userId = 999;
- prismaMock.user.findUnique.mockResolvedValue(null);
- const result = await getUserById(userId);
- expect(result).toBeNull();
- expect(prismaMock.user.findUnique).toHaveBeenCalledWith({ where: { id: userId } });
-
-
- const { CognitoIdentityProviderClient, AdminGetUserCommand } = require('@aws-sdk/client-cognito-identity-provider'); const { getUser } = require('./authService'); // Cognitoクライアントをモック jest.mock('@aws-sdk/client-cognito-identity-provider'); describe('getUser', () => { const mockClient = { send: jest.fn(), }; CognitoIdentityProviderClient.mockImplementation(() => mockClient); it('should return user data for a valid username', async () => { const username = 'testuser'; const mockResponse = { Username: username, UserAttributes: [{ Name: 'email', Value: 'test@example.com' }], }; mockClient.send.mockResolvedValue(mockResponse); const response = await getUser(username); expect(response).toEqual(mockResponse); expect(mockClient.send).toHaveBeenCalledWith(expect.any(AdminGetUserCommand)); }); it('should handle errors gracefully', async () => { mockClient.send.mockRejectedValue(new Error('User not found')); await expect(getUser('invaliduser')).rejects.toThrow('User not found'
+ it('should create user and log message within a transaction', async () => { const userData = { name: 'Jane Doe' };
+ const logMessage = 'User created';
+ const mockUser = { id: 1, ...userData };
+ prismaMock.$transaction.mockImplementation(async (callback) => { return await callback(prismaMock);
+ });
+ prismaMock.user.create.mockResolvedValue(mockUser);
+ prismaMock.$executeRaw.mockResolvedValue();
+ const result = await createUserAndLog(userData, logMessage);
+ expect(result).toEqual(mockUser);
+ expect(prismaMock.user.create).toHaveBeenCalledWith({ data: userData });
+ expect(prismaMock.$executeRaw).toHaveBeenCalledWith( 'INSERT INTO logs (message, userId) VALUES ($1, $2)', logMessage, mockUser.id );
