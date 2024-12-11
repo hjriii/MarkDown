@@ -17,3 +17,6 @@ const { getUserById } = require('./userService');
  const result = await getUserById(userId);
  expect(result).toBeNull();
  expect(prismaMock.user.findUnique).toHaveBeenCalledWith({ where: { id: userId } });
+
+
+ const { CognitoIdentityProviderClient, AdminGetUserCommand } = require('@aws-sdk/client-cognito-identity-provider'); const { getUser } = require('./authService'); // Cognitoクライアントをモック jest.mock('@aws-sdk/client-cognito-identity-provider'); describe('getUser', () => { const mockClient = { send: jest.fn(), }; CognitoIdentityProviderClient.mockImplementation(() => mockClient); it('should return user data for a valid username', async () => { const username = 'testuser'; const mockResponse = { Username: username, UserAttributes: [{ Name: 'email', Value: 'test@example.com' }], }; mockClient.send.mockResolvedValue(mockResponse); const response = await getUser(username); expect(response).toEqual(mockResponse); expect(mockClient.send).toHaveBeenCalledWith(expect.any(AdminGetUserCommand)); }); it('should handle errors gracefully', async () => { mockClient.send.mockRejectedValue(new Error('User not found')); await expect(getUser('invaliduser')).rejects.toThrow('User not found'
